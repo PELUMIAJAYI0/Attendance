@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block title %}Login / Sign Up{% endblock %}
+{% block content %}
+<div class="auth-container">
+    <!-- Login Form -->
+    <div id="login-form-container" class="auth-form-wrapper">
+        <form id="login-form" class="card auth-form">
+            <h2>Access Your Dashboard</h2>
+            <div id="login-error" class="error-message"></div>
+            <input type="email" id="login-email" placeholder="Email Address" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button type="submit" class="cta-button">Login</button>
+            <p class="form-switcher">Don't have an account? <a href="#" id="show-signup">Sign Up</a></p>
+            <p class="form-switcher"><a href="#" id="show-forgot">Forgot Password?</a></p>
+        </form>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signup-form-container" class="auth-form-wrapper" style="display: none;">
+        <form id="signup-form" class="card auth-form">
+            <h2>Join ChronoTrack</h2>
+            <div id="signup-error" class="error-message"></div>
+            <select id="role-select" name="role">
+                <option value="intern">I'm an Intern</option>
+                <option value="student">I'm a Student</option>
+                <option value="supervisor">I'm a Supervisor</option>
+                <option value="lecturer">I'm a Lecturer</option>
+            </select>
+            <input type="text" name="fullName" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="password" name="password" placeholder="Create Password" minlength="6" required>
+            <div id="dynamic-fields">
+                <input type="text" name="company" placeholder="Company Name" required>
+            </div>
+            <button type="submit" class="cta-button">Create Account</button>
+            <p class="form-switcher">Already have an account? <a href="#" id="show-login">Log In</a></p>
+        </form>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgot-form-container" class="auth-form-wrapper" style="display: none;">
+        <form id="forgot-form" class="card auth-form">
+            <h2>Reset Password</h2>
+            <p>Enter your email. We'll send a reset link.</p>
+            <div id="forgot-message" class="message"></div>
+            <input type="email" id="forgot-email" placeholder="Email Address" required>
+            <button type="submit" class="cta-button">Send Reset Link</button>
+            <p class="form-switcher">Back to <a href="#" id="show-login-from-forgot">Log In</a></p>
+        </form>
+    </div>
+</div>
+{% endblock %}

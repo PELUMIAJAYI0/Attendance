@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 id="welcome-message">
+            <div class="loader" style="width: 30px; height: 30px; margin: 0;"></div>
+        </h1>
+        <p id="user-role-info"></p>
+    </div>
+
+    <div id="dashboard-content">
+        <!-- Content will be injected by dashboard.js based on user role -->
+        <div class="loader"></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ChronoTrack{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">ChronoTrack</a>
+            <div id="nav-links">
+                <a href="/#features">Features</a>
+                <a href="/login" class="cta-button">Login / Sign Up</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>© 2024 ChronoTrack. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+    <!-- Our JS Files -->
+    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+    {% if request.path == '/login' %}
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    {% elif request.path == '/dashboard' %}
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% endif %}
+</body>
+
+</html>

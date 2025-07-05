@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block title %}ChronoTrack - The Future of Attendance{% endblock %}
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Time is Your Asset. Track it Intelligently.</h1>
+        <p>ChronoTrack is the seamless, futuristic attendance platform designed for modern organizations. Eliminate
+            late-coming, empower supervisors, and unlock powerful productivity insights.</p>
+        <a href="{{ url_for('login_page') }}" class="cta-button-large">Launch Dashboard</a>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="content-section">
+    <h2>An Evolved Workflow</h2>
+    <div class="features-grid">
+        <div class="card feature-card">
+            <div class="icon">
+                <!-- Placeholder for an icon like a clock -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" width="32" height="32">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3>Instant, Geo-Aware Clock-In</h3>
+            <p>One-tap attendance marking with precise, automatic timestamping. No more manual entry, no more disputes.
+            </p>
+        </div>
+        <div class="card feature-card">
+            <div class="icon">
+                <!-- Placeholder for an icon like a dashboard -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" width="32" height="32">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                </svg>
+            </div>
+            <h3>Centralized Command Center</h3>
+            <p>Supervisors and lecturers get a live, unified view of all personnel. Track presence, punctuality, and
+                trends from a single, elegant interface.</p>
+        </div>
+        <div class="card feature-card">
+            <div class="icon">
+                <!-- Placeholder for an icon like a chart -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" width="32" height="32">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A2.25 2.25 0 011.5 18.75v-5.625zM16.5 6.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v12A2.25 2.25 0 0119.875 21h-2.25a2.25 2.25 0 01-2.25-2.25v-12zM9.75 15.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v4.5A2.25 2.25 0 0113.125 21h-2.25a2.25 2.25 0 01-2.25-2.25v-4.5z" />
+                </svg>
+            </div>
+            <h3>Actionable Data & Reporting</h3>
+            <p>Go beyond simple presence. Identify the most punctual interns, analyze monthly trends, and export data to
+                CSV/Excel for seamless integration.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section id="testimonials" class="content-section">
+    <h2>Trusted by Forward-Thinking Teams</h2>
+    <div class="card testimonial-card">
+        <blockquote>
+            "ChronoTrack didn't just solve our lateness problem; it transformed our entire approach to intern
+            management. The supervisor dashboard is an absolute game-changer."
+        </blockquote>
+        <cite>– Alex Chen, Head of Interns, QuantumLeap Tech</cite>
+    </div>
+</section>
+{% endblock %}
