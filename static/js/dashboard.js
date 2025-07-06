@@ -1,6 +1,17 @@
-// static/js/dashboard.js (CORRECTED VERSION)
-
 document.addEventListener('DOMContentLoaded', async () => {
+    // Wait a bit to ensure Firebase is initialized
+    setTimeout(() => {
+        initializeDashboard();
+    }, 100);
+});
+
+async function initializeDashboard() {
+    // Check if Firebase is initialized
+    if (!firebase.apps.length) {
+        console.error('Firebase not initialized');
+        return;
+    }
+
     const navLinks = document.getElementById('nav-links');
     const welcomeMessage = document.getElementById('welcome-message');
     const userRoleInfo = document.getElementById('user-role-info');
@@ -33,7 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         dashboardContent.innerHTML = `<p>Dashboard for role '${user.role}' is under construction.</p>`;
     }
 }
-)
 
 // --- The rest of the dashboard.js file does not use 'auth' directly, ---
 // --- so it doesn't need changes. Just copy the original functions     ---
