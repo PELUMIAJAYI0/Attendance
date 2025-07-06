@@ -104,3 +104,5 @@ document.addEventListener('DOMContentLoaded', () => {
             messageDiv.style.display = 'block';
         }
     });
+}
+)
