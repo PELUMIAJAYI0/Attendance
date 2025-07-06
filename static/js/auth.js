@@ -1,19 +1,6 @@
 // static/js/auth.js (CORRECTED VERSION)
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit to ensure Firebase is initialized
-    setTimeout(() => {
-        initializeAuthHandlers();
-    }, 100);
-});
-
-function initializeAuthHandlers() {
-    // Check if Firebase is initialized
-    if (!firebase.apps.length) {
-        console.error('Firebase not initialized');
-        return;
-    }
-
     // --- Form toggling (no changes here) ---
     const loginContainer = document.getElementById('login-form-container');
     const signupContainer = document.getElementById('signup-form-container');
@@ -117,4 +104,3 @@ function initializeAuthHandlers() {
             messageDiv.style.display = 'block';
         }
     });
-}
