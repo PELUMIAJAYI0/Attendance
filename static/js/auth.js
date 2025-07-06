@@ -117,3 +117,4 @@ function initializeAuthHandlers() {
             messageDiv.style.display = 'block';
         }
     });
+}
