@@ -35,9 +35,23 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    
+    <!-- Initialize Firebase first -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNsx1D1j0QHddkQMcznLfj3z_tuht7dxo",
+            authDomain: "smart-attendance-a2034.firebaseapp.com",
+            projectId: "smart-attendance-a2034",
+            storageBucket: "smart-attendance-a2034.firebasestorage.app",
+            messagingSenderId: "176563659722",
+            appId: "1:176563659722:web:158dd339631ed11e766533"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
 
-    <!-- Our JS Files -->
-    <script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
     {% if request.path == '/login' %}
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
     {% elif request.path == '/dashboard' %}
