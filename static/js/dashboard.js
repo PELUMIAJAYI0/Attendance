@@ -1,5 +1,3 @@
-// static/js/dashboard.js (CORRECTED VERSION)
-
 document.addEventListener('DOMContentLoaded', async () => {
     const navLinks = document.getElementById('nav-links');
     const welcomeMessage = document.getElementById('welcome-message');
@@ -32,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         dashboardContent.innerHTML = `<p>Dashboard for role '${user.role}' is under construction.</p>`;
     }
-});
+}
+)
 
 // --- The rest of the dashboard.js file does not use 'auth' directly, ---
 // --- so it doesn't need changes. Just copy the original functions     ---
