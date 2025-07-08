@@ -14,9 +14,15 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # Secret key for session management
 
-# Initialize Firebase Admin SDK
-cred = credentials.Certificate("firebase-service-account.json")
-fb_admin.initialize_app(cred)
+# Initialize Firebase Admin SDK with error handling
+try:
+    cred = credentials.Certificate("firebase-service-account.json")
+    fb_admin.initialize_app(cred)
+    print("Firebase Admin SDK initialized successfully")
+except Exception as e:
+    print(f"Error initializing Firebase Admin SDK: {e}")
+    print("Please ensure firebase-service-account.json exists and is valid")
+    
 TIMEZONE = pytz.timezone('Africa/Lagos') # IMPORTANT: Set your company's timezone
 
 # --- Decorator for protected routes ---
