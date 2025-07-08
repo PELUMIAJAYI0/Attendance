@@ -1,5 +1,9 @@
 // static/js/auth.js (CORRECTED VERSION)
 
+// Initialize Firebase
+if (typeof firebaseConfig !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+}
 document.addEventListener('DOMContentLoaded', () => {
     // --- Form toggling (no changes here) ---
     const loginContainer = document.getElementById('login-form-container');
@@ -35,8 +39,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData.entries());
         
         try {
-            // Use firebase.auth() instead of just auth
-            const userCredential = await firebase.auth().createUserWithEmailAndPassword(data.email, data.password);
+            // Check if the user already exists
+            const methods = await firebase.auth().fetchSignInMethodsForEmail(data.email);
+            if (methods && methods.length > 0) {
+                // User already exists, display an error and stop
+                document.getElementById('signup-error').textContent = 'The email address is already in use. Please log in instead.';
+                document.getElementById('signup-error').style.display = 'block';
+                return; // Stop the signup process
+            }
+
+            // User does not exist, proceed with creating the user
+             const userCredential = await firebase.auth().createUserWithEmailAndPassword(data.email, data.password);
             
             const response = await fetch('/api/register', {
                 method: 'POST',
@@ -48,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(result.message);
             
             alert('Registration successful! Please log in.');
-            window.location.reload();
+            window.location.href = '/dashboard';
 
         } catch (error) {
             document.getElementById('signup-error').textContent = error.message;
