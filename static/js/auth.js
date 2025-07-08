@@ -79,12 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Use firebase.auth() instead of just auth
             const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-            const uid = userCredential.user.uid;
+            const idToken = await userCredential.user.getIdToken();
 
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: uid })
+                body: JSON.stringify({ idToken: idToken })
             });
             const result = await response.json();
 
