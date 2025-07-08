@@ -35,7 +35,7 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    
+
     <!-- Initialize Firebase immediately after SDKs load -->
     <script>
         // Firebase configuration
@@ -47,10 +47,11 @@
             messagingSenderId: "176563659722",
             appId: "1:176563659722:web:158dd339631ed11e766533"
         };
-        
+
         // Initialize Firebase immediately
         firebase.initializeApp(firebaseConfig);
         console.log('Firebase initialized successfully');
+
     </script>
 
     {% if request.path == '/login' %}

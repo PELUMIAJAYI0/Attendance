@@ -4,8 +4,8 @@ from datetime import datetime
 from functools import wraps
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
+import firebase_admin as fb_admin
+from firebase_admin import credentials, auth
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,8 +16,7 @@ app.secret_key = os.urandom(24) # Secret key for session management
 
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate("firebase-service-account.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+fb_admin.initialize_app(cred)
 TIMEZONE = pytz.timezone('Africa/Lagos') # IMPORTANT: Set your company's timezone
 
 # --- Decorator for protected routes ---
@@ -82,7 +81,6 @@ def register():
                 'courses': data.get('courses', []) # List of course dicts
             })
 
-        db.collection('users').document(user.uid).set(user_data)
         
         return jsonify({"success": True, "message": "User created successfully."}), 201
     except Exception as e:
@@ -91,25 +89,20 @@ def register():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    # Note: Firebase Admin SDK doesn't have a direct sign-in method.
-    # The frontend handles the sign-in and sends the ID token.
-    # For simplicity here, we'll trust the UID from a successful frontend login.
-    # In a production app, you would verify the ID token.
-    uid = data.get('uid')
-    if not uid:
-        return jsonify({"success": False, "message": "UID is required"}), 400
+    id_token = data.get('idToken') # Expecting ID token from frontend
+
+    if not id_token:
+        return jsonify({"success": False, "message": "ID token is required"}), 400
 
     try:
-        user_doc = db.collection('users').document(uid).get()
-        if user_doc.exists:
-            user_info = user_doc.to_dict()
-            session['user_uid'] = uid
-            session['user_role'] = user_info.get('role')
-            session['user_info'] = user_info # Store all user info in session
-            return jsonify({"success": True, "user": user_info})
-        else:
-            return jsonify({"success": False, "message": "User data not found in Firestore."}), 404
-    except Exception as e:
+        # Verify the ID token using Firebase Admin SDK
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+
+        # User is successfully authenticated via Firebase Auth
+        session['user_uid'] = uid # Store UID in session to mark user as logged in
+        return jsonify({"success": True, "message": "Authentication successful"})
+    except Exception as e: # Catch any exceptions during token verification
         return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/logout', methods=['POST'])
@@ -120,7 +113,10 @@ def logout():
 @app.route('/api/session_data')
 @login_required
 def get_session_data():
-    return jsonify(session.get('user_info', {}))
+    # With Firestore removed, we can only return basic info from the session
+    # based on what was set during successful login
+    user_uid = session.get('user_uid')
+    return jsonify({"uid": user_uid}) # Return only the UID as we don't have more data without Firestore
 
 @app.route('/api/clock_in', methods=['POST'])
 @login_required
@@ -130,9 +126,7 @@ def clock_in():
     today_str = now.strftime('%Y-%m-%d')
     
     # Check if already clocked in today
-    attendance_ref = db.collection('attendance')
-    query = attendance_ref.where('user_uid', '==', user_uid).where('date', '==', today_str).limit(1)
-    if len(list(query.stream())) > 0:
+    # NOTE: This check requires a database, which we've removed. This functionality is broken.
         return jsonify({"success": False, "message": "You have already clocked in today."}), 409
 
     # Determine if late (after 9:00 AM)
@@ -140,11 +134,9 @@ def clock_in():
 
     record = {
         'user_uid': user_uid,
-        'fullName': session['user_info']['fullName'],
-        'company': session['user_info'].get('company'), # For supervisor filtering
         'date': today_str,
         'clock_in_time': now.isoformat(),
-        'is_late': is_late
+        'is_late': is_late # You might not be able to determine lateness without time data
     }
     db.collection('attendance').add(record)
 
@@ -159,36 +151,10 @@ def clock_in():
 @app.route('/api/dashboard_data')
 @login_required
 def get_dashboard_data():
-    user_info = session['user_info']
-    role = user_info['role']
-    today_str = datetime.now(TIMEZONE).strftime('%Y-%m-%d')
-    
-    if role == 'intern' or role == 'student':
-        # Get personal attendance history
-        query = db.collection('attendance').where('user_uid', '==', user_info['uid']).order_by('date', direction=firestore.Query.DESCENDING).limit(30)
-        records = [doc.to_dict() for doc in query.stream()]
-        return jsonify({"type": "personal", "records": records})
+    # With Firestore removed, dashboard data cannot be retrieved.
+    # You will need to reimplement this using another database or method if needed.
+    return jsonify({"message": "Dashboard data is not available without a database."}), 501 # 501 Not Implemented
 
-    elif role == 'supervisor':
-        # Get today's attendance for the supervisor's company
-        company = user_info['company']
-        attendance_query = db.collection('attendance').where('company', '==', company).where('date', '==', today_str)
-        present_interns = [doc.to_dict() for doc in attendance_query.stream()]
-
-        # Get all interns in the company for an "absent" list (more advanced)
-        users_query = db.collection('users').where('company', '==', company).where('role', '==', 'intern')
-        all_interns = [doc.to_dict() for doc in users_query.stream()]
-
-        return jsonify({
-            "type": "management",
-            "present": present_interns,
-            "all_interns_count": len(all_interns)
-        })
-    
-    # Add similar logic for 'lecturer' here based on school/programme
-    # This can get complex, so we'll start with the supervisor
-    
-    return jsonify({"message": "Role not supported for this data view yet."}), 400
 
 
 if __name__ == '__main__':
