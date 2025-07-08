@@ -4,34 +4,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userRoleInfo = document.getElementById('user-role-info');
     const dashboardContent = document.getElementById('dashboard-content');
 
-    const response = await fetch('/api/session_data');
-    if (!response.ok) {
-        window.location.href = '/login';
-        return;
-    }
-    const user = await response.json();
+    try {
+        const response = await fetch('/api/session_data');
+        if (!response.ok) {
+            window.location.href = '/login';
+            return;
+        }
+        const user = await response.json();
 
-    welcomeMessage.textContent = `Welcome, ${user.fullName}!`;
-    navLinks.innerHTML = `<a href="/dashboard">Dashboard</a><button id="logout-btn">Logout</button>`;
-    
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-        await fetch('/api/logout', { method: 'POST' });
-        // Use firebase.auth() instead of just auth
-        await firebase.auth().signOut();
-        window.location.href = '/login';
-    });
+        welcomeMessage.textContent = `Welcome, ${user.fullName || user.email}!`;
+        navLinks.innerHTML = `<a href="/dashboard">Dashboard</a><button id="logout-btn">Logout</button>`;
+        
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            // Use firebase.auth() instead of just auth
+            await firebase.auth().signOut();
+            window.location.href = '/login';
+        });
 
-    if (user.role === 'intern' || user.role === 'student') {
-        userRoleInfo.textContent = `Role: ${user.role.charAt(0).toUpperCase() + user.role.slice(1)} at ${user.company || user.school}`;
-        renderInternDashboard(dashboardContent);
-    } else if (user.role === 'supervisor') {
-        userRoleInfo.textContent = `Role: Supervisor at ${user.company}`;
-        renderSupervisorDashboard(dashboardContent);
-    } else {
-        dashboardContent.innerHTML = `<p>Dashboard for role '${user.role}' is under construction.</p>`;
+        if (user.role === 'intern' || user.role === 'student') {
+            userRoleInfo.textContent = `Role: ${user.role.charAt(0).toUpperCase() + user.role.slice(1)} at ${user.company || user.school || 'N/A'}`;
+            renderInternDashboard(dashboardContent);
+        } else if (user.role === 'supervisor') {
+            userRoleInfo.textContent = `Role: Supervisor at ${user.company || 'N/A'}`;
+            renderSupervisorDashboard(dashboardContent);
+        } else if (user.role === 'lecturer') {
+            userRoleInfo.textContent = `Role: Lecturer at ${user.school || 'N/A'}`;
+            dashboardContent.innerHTML = `<p>Lecturer dashboard is under construction.</p>`;
+        } else {
+            userRoleInfo.textContent = `Role: ${user.role || 'User'}`;
+            renderInternDashboard(dashboardContent); // Default to intern dashboard
+        }
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        window.location.href = '/login';
     }
-}
-)
+});
 
 // --- The rest of the dashboard.js file does not use 'auth' directly, ---
 // --- so it doesn't need changes. Just copy the original functions     ---
@@ -102,6 +110,10 @@ function renderInternDashboard(container) {
             } else {
                 historyContainer.innerHTML = `<p>No attendance records found.</p>`;
             }
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            document.getElementById('personal-history').innerHTML = `<p>Error loading attendance data.</p>`;
         });
 }
 
@@ -127,9 +139,9 @@ function renderSupervisorDashboard(container) {
             const summaryContainer = document.getElementById('summary-cards');
             const tableBody = document.getElementById('attendance-table-body');
             
-            const presentCount = data.present.length;
-            const totalCount = data.all_interns_count;
-            const onTimeCount = data.present.filter(p => !p.is_late).length;
+            const presentCount = data.present ? data.present.length : 0;
+            const totalCount = data.all_interns_count || 0;
+            const onTimeCount = data.present ? data.present.filter(p => !p.is_late).length : 0;
 
             summaryContainer.innerHTML = `
                 <div class="summary-card card"><h3>Present Today</h3><div class="count">${presentCount} / ${totalCount}</div></div>
@@ -137,7 +149,7 @@ function renderSupervisorDashboard(container) {
                 <div class="summary-card card"><h3>Late</h3><div class="count">${presentCount - onTimeCount}</div></div>
             `;
             
-            if (presentCount > 0) {
+            if (data.present && presentCount > 0) {
                 let tableHtml = '';
                 data.present.sort((a, b) => new Date(a.clock_in_time) - new Date(b.clock_in_time));
                 data.present.forEach(rec => {
@@ -152,5 +164,10 @@ function renderSupervisorDashboard(container) {
             } else {
                 tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center;">No interns have clocked in today.</td></tr>`;
             }
+        })
+        .catch(error => {
+            console.error('Error loading supervisor dashboard data:', error);
+            document.getElementById('summary-cards').innerHTML = `<p>Error loading dashboard data.</p>`;
+            document.getElementById('attendance-table-body').innerHTML = `<tr><td colspan="3" style="text-align:center;">Error loading attendance data.</td></tr>`;
         });
 }
