@@ -1,5 +1,12 @@
 {
-  "dependencies": {
-    "firebase": "^11.10.0"
-  }
+  "name": "chronotrack-custom-auth",
+  "version": "1.0.0",
+  "description": "Custom authentication system for ChronoTrack attendance application",
+  "main": "app.py",
+  "scripts": {
+    "init-db": "python init_db.py",
+    "start": "python app.py"
+  },
+  "dependencies": {},
+  "devDependencies": {}
 }

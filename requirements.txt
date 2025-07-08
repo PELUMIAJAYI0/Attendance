@@ -1,4 +1,7 @@
 Flask
-firebase-admin
+psycopg2-binary
+bcrypt
+PyJWT
+flask-mail
 python-dotenv
 pytz

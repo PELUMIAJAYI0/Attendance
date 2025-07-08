@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+{% block title %}Verify Email{% endblock %}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-form-wrapper">
+        <div class="card auth-form">
+            <h2>Verify Your Email</h2>
+            <p style="text-align: center; margin-bottom: 1.5rem; color: var(--text-secondary);">
+                We've sent a 6-digit verification code to your email address. Please enter it below to complete your registration.
+            </p>
+            
+            <div id="verify-error" class="error-message"></div>
+            <div id="verify-success" class="message"></div>
+            
+            <form id="verify-form">
+                <input type="text" id="verification-code" placeholder="Enter 6-digit code" maxlength="6" required style="text-align: center; font-size: 1.2rem; letter-spacing: 0.2em;">
+                <button type="submit" class="cta-button">Verify Email</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 1rem;">
+                <p class="form-switcher">
+                    Didn't receive the code? 
+                    <a href="#" id="resend-code">Resend Code</a>
+                </p>
+                <p class="form-switcher">
+                    <a href="/logout">Use Different Email</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const verifyForm = document.getElementById('verify-form');
+    const codeInput = document.getElementById('verification-code');
+    const errorDiv = document.getElementById('verify-error');
+    const successDiv = document.getElementById('verify-success');
+    const resendLink = document.getElementById('resend-code');
+    
+    // Auto-format verification code input
+    codeInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    
+    // Handle verification
+    verifyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = codeInput.value.trim();
+        
+        if (code.length !== 6) {
+            showError('Please enter a 6-digit code');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/verify-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showSuccess(result.message);
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1500);
+            } else {
+                showError(result.message);
+            }
+        } catch (error) {
+            showError('Verification failed. Please try again.');
+        }
+    });
+    
+    // Handle resend code
+    resendLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        resendLink.textContent = 'Sending...';
+        
+        try {
+            const response = await fetch('/api/resend-verification', {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showSuccess(result.message);
+            } else {
+                showError(result.message);
+            }
+        } catch (error) {
+            showError('Failed to resend code. Please try again.');
+        } finally {
+            resendLink.textContent = 'Resend Code';
+        }
+    });
+    
+    function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        successDiv.style.display = 'none';
+    }
+    
+    function showSuccess(message) {
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        errorDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
