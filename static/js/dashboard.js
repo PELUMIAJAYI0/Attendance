@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderSupervisorDashboard(dashboardContent);
         } else if (user.role === 'lecturer') {
             userRoleInfo.textContent = `Role: Lecturer at ${user.school || 'N/A'}`;
-            dashboardContent.innerHTML = `<p>Lecturer dashboard is under construction.</p>`;
+            renderSupervisorDashboard(dashboardContent); // Use same dashboard as supervisor
         } else {
             userRoleInfo.textContent = `Role: ${user.role || 'User'}`;
             renderInternDashboard(dashboardContent); // Default to intern dashboard

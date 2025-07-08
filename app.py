@@ -1,11 +1,14 @@
+# --- START OF CORRECTED app.py ---
+
 import os
 import pytz
 from datetime import datetime
 from functools import wraps
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-import firebase_admin as fb_admin
-from firebase_admin import credentials, auth
+import firebase_admin
+# IMPORTANT: Re-add firestore to use the database
+from firebase_admin import credentials, auth, firestore
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,15 +17,13 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.urandom(24) # Secret key for session management
 
-# Initialize Firebase Admin SDK with error handling
-try:
-    cred = credentials.Certificate("firebase-service-account.json")
-    fb_admin.initialize_app(cred)
-    print("Firebase Admin SDK initialized successfully")
-except Exception as e:
-    print(f"Error initializing Firebase Admin SDK: {e}")
-    print("Please ensure firebase-service-account.json exists and is valid")
-    
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate("firebase-service-account.json")
+firebase_admin.initialize_app(cred)
+
+# IMPORTANT: Re-initialize the database client
+db = firestore.client()
+
 TIMEZONE = pytz.timezone('Africa/Lagos') # IMPORTANT: Set your company's timezone
 
 # --- Decorator for protected routes ---
@@ -30,7 +31,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "user_uid" not in session:
-            return redirect(url_for('login_page', next=request.url))
+            return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -54,37 +55,45 @@ def dashboard():
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
-    email = data['email']
-    password = data['password']
-    role = data['role']
-    full_name = data['fullName']
-
     try:
+        email = data['email']
+        password = data['password']
+        role = data['role']
+        full_name = data['fullName']
+
         # Create user in Firebase Authentication
-        user = auth.create_user(
-            email=email, 
-            password=password,
-            display_name=full_name
-        )
+        user = auth.create_user(email=email, password=password)
         
-        # Store user info in session for this demo
-        # In production, you'd want to use a proper database
-        session[f'user_data_{user.uid}'] = {
+        # Store additional user info in Firestore
+        user_data = {
             "uid": user.uid,
             "email": email,
             "role": role,
-            "fullName": full_name,
-            "company": data.get('company'),
-            "matricNumber": data.get('matricNumber'),
-            "school": data.get('school'),
-            "programme": data.get('programme'),
-            "level": data.get('level'),
-            "courses": data.get('courses', [])
+            "fullName": full_name
         }
+        # Add role-specific fields
+        if role == 'intern' or role == 'supervisor':
+            user_data['company'] = data['company']
+        elif role == 'student':
+            user_data.update({
+                'matricNumber': data['matricNumber'],
+                'school': data['school'],
+                'programme': data['programme'],
+                'level': data['level']
+            })
+        elif role == 'lecturer':
+             user_data.update({
+                'school': data['school'],
+                'programme': data['programme'],
+                'courses': data.get('courses', [])
+            })
+
+        # Save the user data to the Firestore database
+        db.collection('users').document(user.uid).set(user_data)
         
         return jsonify({"success": True, "message": "User created successfully."}), 201
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+        return jsonify({"success": False, "message": f"An error occurred: {e}"}), 400
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -95,21 +104,21 @@ def login():
         return jsonify({"success": False, "message": "ID token is required"}), 400
 
     try:
-        # Verify the ID token using Firebase Admin SDK
+        # Verify the ID token using Firebase Admin SDK. This is secure.
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token['uid']
-
-        # Get user info from Firebase Auth
-        user_record = auth.get_user(uid)
         
-        # Store user info in session
-        session['user_uid'] = uid
-        session['user_email'] = user_record.email
-        session['user_display_name'] = user_record.display_name or user_record.email
-        
-        return jsonify({"success": True, "message": "Authentication successful"})
-    except Exception as e: # Catch any exceptions during token verification
-        return jsonify({"success": False, "message": str(e)}), 500
+        # Get user data from Firestore to store in the session
+        user_doc = db.collection('users').document(uid).get()
+        if user_doc.exists:
+            session['user_uid'] = uid
+            session['user_info'] = user_doc.to_dict() # Store full user profile
+            return jsonify({"success": True, "message": "Login successful"})
+        else:
+            return jsonify({"success": False, "message": "User data not found in database."}), 404
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Authentication error: {e}"}), 500
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
@@ -119,25 +128,7 @@ def logout():
 @app.route('/api/session_data')
 @login_required
 def get_session_data():
-    user_uid = session.get('user_uid')
-    
-    # Try to get stored user data from session first
-    user_data = session.get(f'user_data_{user_uid}')
-    
-    if user_data:
-        return jsonify(user_data)
-    else:
-        # Fallback to basic info from Firebase Auth
-        try:
-            user_record = auth.get_user(user_uid)
-            return jsonify({
-                "uid": user_uid,
-                "email": user_record.email,
-                "fullName": user_record.display_name or user_record.email,
-                "role": "intern"  # Default role since we don't have database
-            })
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+    return jsonify(session.get('user_info', {}))
 
 @app.route('/api/clock_in', methods=['POST'])
 @login_required
@@ -146,21 +137,29 @@ def clock_in():
     now = datetime.now(TIMEZONE)
     today_str = now.strftime('%Y-%m-%d')
     
-    # Check if already clocked in today (using session storage)
-    clock_in_key = f'clock_in_{user_uid}_{today_str}'
-    if session.get(clock_in_key):
+    # Check if already clocked in today
+    attendance_ref = db.collection('attendance')
+    query = attendance_ref.where('user_uid', '==', user_uid).where('date', '==', today_str).limit(1)
+    
+    # Check if user already clocked in today
+    existing_records = list(query.stream())
+    if len(existing_records) > 0:
         return jsonify({"success": False, "message": "You have already clocked in today."}), 409
 
     # Determine if late (after 9:00 AM)
     is_late = now.time() > datetime.strptime("09:00:00", "%H:%M:%S").time()
 
-    # Store clock-in record in session
-    session[clock_in_key] = {
+    record = {
         'user_uid': user_uid,
+        'fullName': session['user_info']['fullName'],
+        'company': session['user_info'].get('company', ''), # For supervisor filtering
+        'school': session['user_info'].get('school', ''), # For student filtering
         'date': today_str,
         'clock_in_time': now.isoformat(),
         'is_late': is_late
     }
+    # Add the record to Firestore
+    db.collection('attendance').add(record)
 
     return jsonify({
         "success": True, 
@@ -169,51 +168,59 @@ def clock_in():
         "is_late": is_late
     }), 201
 
+
 @app.route('/api/dashboard_data')
 @login_required
 def get_dashboard_data():
-    user_uid = session['user_uid']
-    user_data = session.get(f'user_data_{user_uid}', {})
-    role = user_data.get('role', 'intern')
+    user_info = session['user_info']
+    role = user_info['role']
+    today_str = datetime.now(TIMEZONE).strftime('%Y-%m-%d')
     
-    if role in ['intern', 'student']:
-        # Get personal attendance records from session
-        records = []
-        for key, value in session.items():
-            if key.startswith(f'clock_in_{user_uid}_'):
-                records.append(value)
-        
-        # Sort by date (newest first)
-        records.sort(key=lambda x: x['date'], reverse=True)
-        
-        return jsonify({"records": records[:10]})  # Return last 10 records
-    
+    if role == 'intern' or role == 'student':
+        query = db.collection('attendance').where('user_uid', '==', user_info['uid']).order_by('date', direction=firestore.Query.DESCENDING).limit(30)
+        records = [doc.to_dict() for doc in query.stream()]
+        return jsonify({"type": "personal", "records": records})
+
     elif role == 'supervisor':
-        # Get all clock-in records for today
-        today_str = datetime.now(TIMEZONE).strftime('%Y-%m-%d')
-        present_today = []
-        
-        for key, value in session.items():
-            if key.startswith('clock_in_') and key.endswith(f'_{today_str}'):
-                # Get user data for this record
-                record_uid = value['user_uid']
-                user_info = session.get(f'user_data_{record_uid}', {})
-                
-                if user_info.get('role') in ['intern', 'student']:
-                    present_today.append({
-                        **value,
-                        'fullName': user_info.get('fullName', 'Unknown User')
-                    })
-        
-        # Count total interns/students (mock data for demo)
-        total_count = 5  # You can adjust this or calculate from actual data
-        
+        company = user_info['company']
+        # Get today's attendance for this company
+        attendance_query = db.collection('attendance').where('date', '==', today_str)
+        all_attendance = [doc.to_dict() for doc in attendance_query.stream()]
+        present_interns = [rec for rec in all_attendance if rec.get('company') == company]
+
+        # Get all interns in this company
+        users_query = db.collection('users').where('role', '==', 'intern')
+        all_users = [doc.to_dict() for doc in users_query.stream()]
+        all_interns = [user for user in all_users if user.get('company') == company]
+
         return jsonify({
-            "present": present_today,
-            "all_interns_count": total_count
+            "type": "management",
+            "present": present_interns,
+            "all_interns_count": len(all_interns)
         })
     
-    return jsonify({"message": "Dashboard data is not available for this role."}), 501
+    elif role == 'lecturer':
+        school = user_info['school']
+        # Get today's attendance for this school
+        attendance_query = db.collection('attendance').where('date', '==', today_str)
+        all_attendance = [doc.to_dict() for doc in attendance_query.stream()]
+        present_interns = [doc.to_dict() for doc in attendance_query.stream()]
+
+        # Get all students in this school
+        users_query = db.collection('users').where('role', '==', 'student')
+        all_users = [doc.to_dict() for doc in users_query.stream()]
+        all_students = [user for user in all_users if user.get('school') == school]
+
+        return jsonify({
+            "type": "management",
+            "present": present_interns,
+            "all_interns_count": len(all_students)
+        })
+    
+    return jsonify({"message": "Role not supported for this data view yet."}), 400
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
+
+# --- END OF CORRECTED app.py ---
